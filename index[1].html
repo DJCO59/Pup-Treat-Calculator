@@ -1,26 +1,235 @@
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pup's Treat Calculator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦴</text></svg>">
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pup’s Treat Calculator 2.0</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --ink: #0f172a;
+      --muted: #475569;
+      --accent: #6366f1;
+      --ok: #16a34a;
+      --error: #dc2626;
+      --radius: 16px;
+      --shadow: 0 4px 20px rgba(2, 6, 23, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; background:var(--bg); color:var(--ink); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    .wrap { max-width: 980px; margin: 32px auto; padding: 0 16px; }
+    header { text-align: center; margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 2.4vw + 1rem, 2.2rem); }
+    p.lead { color: var(--muted); margin: 0; }
+    .panel {
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 16px; margin: 20px 0;
+    }
+    .row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center; }
+    .input { display:flex; gap:10px; align-items:center; }
+    input[type="number"]{
+      width: 200px; padding: 10px 12px; border:1px solid #cbd5e1; border-radius: 10px; font-size: 16px;
+    }
+    button {
+      padding: 10px 14px; border:none; border-radius: 10px; background: var(--accent); color:white; font-weight:600; cursor:pointer;
+    }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .error { color: var(--error); font-weight: 600; }
+    .grid {
+      display:grid; gap:12px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+    .card {
+      background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+      padding: 16px; display:flex; flex-direction:column; gap:8px;
+    }
+    .big { font-size: 32px; font-weight: 800; }
+    .muted { color: var(--muted); font-size: 14px; }
+    .blurb { margin-top: 12px; font-weight:600; color: var(--ok); }
+    details { margin-top: 8px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid #e2e8f0; text-align:left; padding: 8px; }
+    th { color: var(--muted); font-weight: 600; }
+    .footer { text-align:center; color:var(--muted); font-size: 13px; margin-top: 16px; }
+  </style>
 </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>🐶 Pup’s Treat Calculator</h1>
+      <p class="lead">Tell us how many treats the good pup wants — we’ll tell you how many cute behaviors they owe you. Fair’s fair. 😉</p>
+    </header>
+
+    <section class="panel" aria-labelledby="calcLabel">
+      <div class="row">
+        <label id="calcLabel" class="input">
+          <span>How many treats?</span>
+          <input id="treats" type="number" min="1" max="200" placeholder="e.g., 27" inputmode="numeric" aria-describedby="helper"/>
+        </label>
+        <div>
+          <button id="computeBtn">Compute</button>
+        </div>
+      </div>
+      <div id="helper" class="muted" style="margin-top:6px;">Allowed: 1–200 treats. We’ll round up behavior counts.</div>
+      <div id="msg" style="margin-top:8px;"></div>
+    </section>
+
+    <section class="panel">
+      <div class="grid" id="cards"></div>
+      <div class="blurb" id="blurb" role="status" aria-live="polite"></div>
+
+      <details>
+        <summary><strong>Customize behaviors</strong> (advanced)</summary>
+        <p class="muted">Edit the cost (treats per 1 behavior). Changes are saved to your browser and applied instantly.</p>
+        <div style="overflow:auto;">
+          <table id="table">
+            <thead>
+              <tr><th>Emoji</th><th>Behavior</th><th>Cost (treats)</th></tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <div class="footer">No frameworks. No CDNs. Just vibes and math.</div>
+  </div>
+
+  <script>
+    // -------- Configuration (you can edit this) ----------
+    const DEFAULT_BEHAVIORS = [
+      { key: "cute_look",   label: "Cute Look",      emoji: "🥺", cost: 2 },
+      { key: "head_tilt",   label: "Head Tilt",      emoji: "🐶", cost: 4 },
+      { key: "butt_wiggle", label: "Butt Wiggle",    emoji: "🍑", cost: 7 },
+      { key: "begging",     label: "Begging (paws up)", emoji: "👐", cost: 3 },
+      { key: "roll_over",   label: "Roll Over",      emoji: "🔁", cost: 6 },
+      { key: "shake_paw",   label: "Shake Paw",      emoji: "🤝", cost: 5 },
+      { key: "sit_stay",    label: "Sit & Stay (30s)", emoji: "🪑", cost: 8 }
+    ];
+    const STORAGE_KEY = "pup_calc_behaviors_v1";
+
+    // -------- State & init ----------
+    let behaviors = loadBehaviors();
+    const treatsEl = document.getElementById("treats");
+    const computeBtn = document.getElementById("computeBtn");
+    const cardsEl = document.getElementById("cards");
+    const blurbEl = document.getElementById("blurb");
+    const msgEl = document.getElementById("msg");
+    const tableBodyEl = document.getElementById("tableBody");
+
+    renderCards();
+    renderTable();
+    restoreLastTreats();
+
+    computeBtn.addEventListener("click", compute);
+    treatsEl.addEventListener("keydown", (e) => { if (e.key === "Enter") compute(); });
+    tableBodyEl.addEventListener("input", onTableEdit);
+
+    // -------- Core logic ----------
+    function compute() {
+      const t = Number(treatsEl.value);
+      msgEl.textContent = "";
+      msgEl.className = "";
+      if (!Number.isFinite(t) || t <= 0) {
+        msgEl.textContent = "Please enter a number of treats between 1 and 200.";
+        msgEl.className = "error";
+        cardsEl.querySelectorAll("[data-count]").forEach(el => el.textContent = "—");
+        blurbEl.textContent = "";
+        return;
+      }
+      if (t > 200) {
+        msgEl.textContent = "Easy there, champ. Max 200 treats.";
+        msgEl.className = "error";
+        return;
+      }
+      localStorage.setItem("pup_calc_last_treats", String(t));
+      const counts = behaviors.map(b => ({...b, count: Math.ceil(t / Math.max(1, Number(b.cost) || 1)) }));
+      updateCounts(counts);
+      updateBlurb(counts);
+    }
+
+    function updateCounts(counts) {
+      counts.forEach(c => {
+        const el = document.querySelector(`[data-key="${c.key}"] [data-count]`);
+        if (el) el.textContent = String(c.count);
+      });
+    }
+
+    function updateBlurb(counts) {
+      // Build a playful sentence with up to first 3 items, then "+ N more"
+      const parts = counts.map(c => `${c.count} ${c.label.toLowerCase()}`);
+      const preview = parts.slice(0,3).join(", ") + (parts.length > 3 ? `, + ${parts.length - 3} more` : "");
+      blurbEl.textContent = preview ? `That’ll be ${preview}. Stay strong, human.` : "";
+    }
+
+    // -------- Renderers ----------
+    function renderCards() {
+      cardsEl.innerHTML = behaviors.map(b => `
+        <div class="card" data-key="${b.key}">
+          <div aria-hidden="true" style="font-size: 28px">${b.emoji}</div>
+          <div class="big" data-count>—</div>
+          <div>${b.label}</div>
+          <div class="muted">For every ${b.cost} treats</div>
+        </div>
+      `).join("");
+    }
+
+    function renderTable() {
+      tableBodyEl.innerHTML = behaviors.map(b => `
+        <tr data-key="${b.key}">
+          <td style="width:80px"><input aria-label="Emoji for ${b.label}" value="${escapeAttr(b.emoji)}" /></td>
+          <td><input aria-label="Label for ${b.label}" value="${escapeAttr(b.label)}" style="width:100%" /></td>
+          <td style="width:140px"><input aria-label="Cost for ${b.label}" type="number" min="1" step="1" value="${Number(b.cost)}" /></td>
+        </tr>
+      `).join("");
+    }
+
+    function onTableEdit(e) {
+      const tr = e.target.closest("tr");
+      if (!tr) return;
+      const key = tr.getAttribute("data-key");
+      const inputs = tr.querySelectorAll("input");
+      const [emojiEl, labelEl, costEl] = inputs;
+      const b = behaviors.find(x => x.key === key);
+      if (!b) return;
+      b.emoji = emojiEl.value || b.emoji;
+      b.label = labelEl.value || b.label;
+      const cost = Number(costEl.value);
+      b.cost = Number.isFinite(cost) && cost > 0 ? Math.floor(cost) : b.cost;
+      saveBehaviors();
+      renderCards(); // re-render to update labels/emoji/cost text
+      compute();     // recompute with new costs
+    }
+
+    // -------- Persistence ----------
+    function saveBehaviors() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(behaviors));
+    }
+    function loadBehaviors() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return DEFAULT_BEHAVIORS.map(x => ({...x}));
+        const parsed = JSON.parse(raw);
+        // basic validation
+        if (!Array.isArray(parsed)) throw new Error("bad");
+        return DEFAULT_BEHAVIORS.map(def => {
+          const found = parsed.find(p => p.key === def.key);
+          return found ? {...def, ...found} : {...def};
+        });
+      } catch {
+        return DEFAULT_BEHAVIORS.map(x => ({...x}));
+      }
+    }
+    function restoreLastTreats() {
+      const raw = localStorage.getItem("pup_calc_last_treats");
+      if (raw) treatsEl.value = raw;
+    }
+
+    // -------- Utils ----------
+    function escapeAttr(s) {
+      return String(s).replaceAll('"', '&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    }
+  </script>
+</body>
 </html>
