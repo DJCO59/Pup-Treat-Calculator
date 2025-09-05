@@ -1,0 +1,5 @@
+{
+  "name": "Pup's Treat Calculator",
+  "description": "A fun app that calculates the number of cute behaviors a dog needs to perform to earn a certain number of treats. It uses AI to generate a motivational message for your pup.",
+  "requestFramePermissions": []
+}
