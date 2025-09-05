@@ -58,6 +58,22 @@
   color: #334155;
   margin: 0;
 }
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .subheader {
+    font-size: 1rem;   /* slightly smaller tagline on phones */
+  }
+  input[type="number"] {
+    width: 100%;       /* let the input stretch full width */
+  }
+  .row {
+    grid-template-columns: 1fr; /* stack input + button vertically */
+    gap: 8px;
+  }
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
   </style>
 </head>
 <body>
