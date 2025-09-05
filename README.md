@@ -1,7 +1,7 @@
-# 🐶 Pup’s Treat Calculator
+# 🐶 Treat-O-Meter
 
-A playful web app that answers the age-old question:  
-**How many cute behaviors must a pup perform to earn their treats?**
+The official Treat-O-Meter by Two Pups LLC.  
+Maximizing treat output around the world, one wiggle at a time.
 
 **Live Demo:** https://djco59.github.io/Pup-Treat-Calculator/
 
