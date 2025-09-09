@@ -2,6 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { BehaviorCard } from './components/BehaviorCard';
 import { TreatInput } from './components/TreatInput';
 import { BehaviorType } from './types';
+import { formatCount } from "./utils/format";
+import { Badge } from "./components/Badge";
+
 
 const PawPrintIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
@@ -57,8 +60,13 @@ const App: React.FC = () => {
         <header className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-amber-900 drop-shadow-sm">Pup's Treat Calculator</h1>
             <p className="text-slate-600 mt-2">Find out the "price" of today's snacks in cute currency!</p>
+    <div className="mt-1 text-xs text-slate-400" aria-hidden="true" data-testid="fmt-main"
+    >
+      {formatCount(3)}
+    <div className="mt-1 text-xs text-slate-400" aria-hidden="true" data-testid="fmt-badge">
+      <Badge n={5} />  
+    </div>
         </header>
-
         <section>
           <TreatInput value={treatCount} onChange={setTreatCount} />
         </section>
