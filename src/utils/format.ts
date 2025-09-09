@@ -1,1 +1,3 @@
-export function formatCount(n: number) { return `x${n}`; }
+export function formatCount(n: number, suffix = "") {
+  return `x${n}${suffix}`;
+}

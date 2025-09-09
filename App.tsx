@@ -62,7 +62,7 @@ const App: React.FC = () => {
             <p className="text-slate-600 mt-2">Find out the "price" of today's snacks in cute currency!</p>
     <div className="mt-1 text-xs text-slate-400" aria-hidden="true" data-testid="fmt-main"
     >
-      {formatCount(3)}
+      {formatCount(3, "treats")}
     <div className="mt-1 text-xs text-slate-400" aria-hidden="true" data-testid="fmt-badge">
       <Badge n={5} />  
     </div>
